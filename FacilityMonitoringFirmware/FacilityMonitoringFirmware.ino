@@ -8,14 +8,15 @@
 #include <Mudbus.h>
 #include "MonitorController.h"
 
-IPAddress ip(172, 20, 1, 62);
+IPAddress ip(172, 21, 100, 30);
 IPAddress subnet(255, 255, 0, 0);
-byte macAddress[6] = { 0x90, 0xA2, 0xDA, 0x00, 0xC4, 0x5A };
+//byte macAddress[6] = { 0x90, 0xA2, 0xDA, 0x00, 0xC4, 0x5A };
+byte macAddress[6] = { 0x90, 0xA2, 0xDA, 0x00, 0xC4, 0x6A };
 MonitorController Controller;
 
 void setup() {
 	Controller.Init();
-	Controller.CalibrateAnalog();
+	//Controller.CalibrateAnalog();
 	Ethernet.begin(macAddress, ip, subnet);
 }
 

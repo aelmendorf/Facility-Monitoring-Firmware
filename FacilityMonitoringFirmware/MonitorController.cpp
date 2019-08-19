@@ -52,7 +52,7 @@ void MonitorController::ReadAnalog()
 		float read = 0;
 		for (int x = 0; x < AVG; x++) {
 			float val = (float)analogRead(this->AnalogInputPins[i]);
-			read += map(val, this->AnalogPinMinValues[i], this->AnalogPinMaxValues[i], 0, AnalogMax);
+			read += val;
 		}
 		read = read / AVG;
 		this->AnalogValues[i]=(read/Step);
@@ -84,7 +84,7 @@ void MonitorController::ReadDigital()
 void MonitorController::UpdateModbus()
 {
 	for (int i = 0; i < AnalogPins; i++) {
-		this->modbus.R[i] = this->AnalogValues[i];
+		this->modbus.R[i] = (int)(this->AnalogValues[i]*1000);
 	}
 
 
@@ -177,18 +177,18 @@ void MonitorController::Print()
 	}
 	Serial.println();
 
-	Serial.println("Analog Min Cal");
-	for (int i = 0; i < AnalogPins; i++) {
-		Serial.print(" Min"); Serial.print(i);
-		Serial.print(": "); Serial.print(this->AnalogPinMinValues[i]);
-	}
-	Serial.println();
+	//Serial.println("Analog Min Cal");
+	//for (int i = 0; i < AnalogPins; i++) {
+	//	Serial.print(" Min"); Serial.print(i);
+	//	Serial.print(": "); Serial.print(this->AnalogPinMinValues[i]);
+	//}
+	//Serial.println();
 
-	Serial.println("Analog Max Cal");
-	for (int i = 0; i < AnalogPins; i++) {
-		Serial.print(" Max"); Serial.print(i);
-		Serial.print(": "); Serial.print(this->AnalogPinMaxValues[i]);
-	}
-	Serial.println();
+	//Serial.println("Analog Max Cal");
+	//for (int i = 0; i < AnalogPins; i++) {
+	//	Serial.print(" Max"); Serial.print(i);
+	//	Serial.print(": "); Serial.print(this->AnalogPinMaxValues[i]);
+	//}
+	//Serial.println();
 }
 
