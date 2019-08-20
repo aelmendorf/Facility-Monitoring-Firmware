@@ -1,23 +1,5 @@
 #include "MonitorController.h"
 
-void MonitorController::CalibrateAnalog()
-{
-	for (int i = 0; i < AnalogPins; i++) {
-		for (int x = 0; x < 500; x++) {
-			int value = analogRead(this->AnalogInputPins[i]);
-			// record the maximum sensor value
-			if (value > AnalogPinMaxValues[i]) {
-				this->AnalogPinMaxValues[i] = value;
-			}
-
-			// record the minimum sensor value
-			if (value < AnalogPinMinValues[i]) {
-				this->AnalogPinMinValues[i] = value;
-			}
-		}
-	}
-}
-
 void MonitorController::SetupAnalog()
 {
 	for (int i = 0; i < AnalogPins; i++) {
@@ -143,9 +125,6 @@ void MonitorController::Run()
 
 void MonitorController::Print()
 {
-	Serial.print("Min: "); Serial.print(sensorMin);
-	Serial.print(" Max: "); Serial.print(sensorMax);
-	Serial.println();
 	Serial.println("Digital Pull-up Pins");
 	for (int i = 0; i < PullUpDigitalPins; i++) {
 		Serial.print(" P"); Serial.print(i);
@@ -176,19 +155,5 @@ void MonitorController::Print()
 		Serial.print(": "); Serial.print(AnalogValues[i]);
 	}
 	Serial.println();
-
-	//Serial.println("Analog Min Cal");
-	//for (int i = 0; i < AnalogPins; i++) {
-	//	Serial.print(" Min"); Serial.print(i);
-	//	Serial.print(": "); Serial.print(this->AnalogPinMinValues[i]);
-	//}
-	//Serial.println();
-
-	//Serial.println("Analog Max Cal");
-	//for (int i = 0; i < AnalogPins; i++) {
-	//	Serial.print(" Max"); Serial.print(i);
-	//	Serial.print(": "); Serial.print(this->AnalogPinMaxValues[i]);
-	//}
-	//Serial.println();
 }
 

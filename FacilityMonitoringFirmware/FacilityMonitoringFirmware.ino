@@ -16,7 +16,6 @@ MonitorController Controller;
 
 void setup() {
 	Controller.Init();
-	//Controller.CalibrateAnalog();
 	Ethernet.begin(macAddress, ip, subnet);
 }
 
