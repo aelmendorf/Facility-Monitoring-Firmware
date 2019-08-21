@@ -1,30 +1,29 @@
 #include "MonitorController.h"
 
-void MonitorController::SetupAnalog()
-{
+
+void MonitorController::SetupPins() {
+
+	pinMode(SS_SD_CARD, OUTPUT);
+	pinMode(SS_ETHERNET, OUTPUT);
+	digitalWrite(SS_ETHERNET, LOW);  // Ethernet ACTIVE
+	digitalWrite(SS_ETHERNET, HIGH);  // SD Card Deactivated
+
 	for (int i = 0; i < AnalogPins; i++) {
 		pinMode(this->AnalogInputPins[i], INPUT);
 	}
-}
 
-void MonitorController::Setup24VDigital()
-{
 	for (int i = 0; i < Digital24VPins; i++) {
 		pinMode(this->Input24VoltPins[i], INPUT);
 	}
-}
 
-void MonitorController::SetupPullUpDigital()
-{
 	for (int i = 0; i < PullUpDigitalPins; i++) {
 		pinMode(this->InputPullUpPins[i], INPUT_PULLUP);
 	}
-}
 
-void MonitorController::SetupOutputDigital()
-{
 	for (int i = 0; i < DigitalOutputPins; i++) {
 		pinMode(this->OutputPins[i], OUTPUT);
+		delay(1);
+		digitalWrite(this->OutputPins[i],this->OutputDefaults[DigitalOutputPins]);
 	}
 }
 
@@ -38,7 +37,7 @@ void MonitorController::ReadAnalog()
 		}
 		read = read / AVG;
 		this->AnalogValues[i]=(read/Step);
-		delay(10);
+		delay(5);
 	}
 }
 
@@ -46,19 +45,19 @@ void MonitorController::ReadDigital()
 {
 	for (int i = 0; i < PullUpDigitalPins; i++) {
 		int value = digitalRead(this->InputPullUpPins[i]);
-		if (value > 0) {
-			this->InputPullUpValues[i] = 1; //no switch
+		if (value==LOW) {
+			this->InputPullUpValues[i] = 1; //switch(Warning)
 		}else {
-			this->InputPullUpValues[i] = 0; // switch triggered(alarm)
+			this->InputPullUpValues[i] = 0; // no Switch
 		}
 	}
 
 	for (int i = 0; i < Digital24VPins; i++) {
 		int value = digitalRead(this->Input24VoltPins[i]);
 		if (value > 0) {
-			this->Input24VoltValues[i] = 1;
+			this->Input24VoltValues[i] = 1; //switch(Warning)  
 		}else {
-			this->Input24VoltValues[i] = 0;
+			this->Input24VoltValues[i] = 0; //no switch
 		}
 	}
 }
@@ -69,7 +68,6 @@ void MonitorController::UpdateModbus()
 		this->modbus.R[i] = (int)(this->AnalogValues[i]*1000);
 	}
 
-
 	for (int i = 0; i < PullUpDigitalPins; i++) {
 		this->modbus.C[i] = this->InputPullUpValues[i];
 	}
@@ -77,13 +75,34 @@ void MonitorController::UpdateModbus()
 	int offset = PullUpDigitalPins;
 
 	for (int i = 0; i < Digital24VPins; i++) {
-		this->modbus.C[i + PullUpDigitalPins] = this->Input24VoltValues[i];
+		this->modbus.C[i + offset] = this->Input24VoltValues[i];
 	}
+}
 
-	offset += Digital24VPins;
-
-	for (int i = 0; i < DigitalOutputPins; i++) {
-		this->modbus.C[i + offset] = this->OutputValues[i];
+void MonitorController::CheckModbusInput()
+{	
+	if (this->modbus.C[CoilComIndex]) {
+		if (this->modbus.C[MaintenceModeIndex]) {
+			this->maintenceMode = true;
+			//set reg
+			for (int i = 0; i < DigitalOutputPins; i++) {
+				digitalWrite(this->OutputPins[i],modbus.R[i + InputRegIndex]);
+			}
+		}else if(this->maintenceMode) {
+			this->maintenceMode = false;
+			for (int i = 0; i < DigitalOutputPins; i++) {
+				digitalWrite(this->OutputPins[i], this->OutputValues[i]);
+			}
+		}else {
+			//check registers
+			for (int i = 0; i < DigitalOutputPins; i++) {
+				if (this->OutputValues[i] != modbus.R[i + InputRegIndex]) {
+					this->OutputValues[i] = modbus.R[i + InputRegIndex];
+					digitalWrite(this->OutputPins[i], this->OutputValues[i]);
+				}
+			}
+		}
+		this->modbus.C[CoilComIndex] = false;
 	}
 }
 
@@ -91,15 +110,15 @@ void MonitorController::Init()
 {
 	this->lastLoop = 0;
 	this->lastPrint = 0;
-	pinMode(SS_SD_CARD, OUTPUT);
-	pinMode(SS_ETHERNET, OUTPUT);
-	digitalWrite(SS_ETHERNET, LOW);  // Ethernet ACTIVE
-	digitalWrite(SS_ETHERNET, HIGH);  // SD Card Deactivated
+	this->SetupPins();
+	for (int i = 0; i < MB_N_C; i++) {
+		this->modbus.C[i] = false;
+	}
 
-	this->SetupAnalog();
-	this->Setup24VDigital();
-	this->SetupPullUpDigital();
-	this->SetupOutputDigital();
+	for (int i = 0; i < MB_N_R; i++) {
+		this->modbus.R[i] = 0;
+	}
+
 #if DEBUG
 	Serial.begin(38400);
 	this->Print();
@@ -109,10 +128,12 @@ void MonitorController::Init()
 void MonitorController::Run()
 {
 	modbus.Run();
+	this->CheckModbusInput();
 	if (millis() >= (LoopTime + this->lastLoop)) {
+
 		this->ReadDigital();
 		this->ReadAnalog();
-		this->UpdateModbus();
+		this->UpdateModbus();		
 		this->lastLoop += LoopTime;
 	}
 #if DEBUG

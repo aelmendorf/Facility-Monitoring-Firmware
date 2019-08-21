@@ -27,6 +27,9 @@
     <ClInclude Include="MonitorController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Helpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MonitorController.cpp">
