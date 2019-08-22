@@ -3,47 +3,48 @@
 
 void MonitorController::SetupPins() {
 
+	//enable ethernet board
 	pinMode(SS_SD_CARD, OUTPUT);
 	pinMode(SS_ETHERNET, OUTPUT);
 	digitalWrite(SS_ETHERNET, LOW);  // Ethernet ACTIVE
 	digitalWrite(SS_ETHERNET, HIGH);  // SD Card Deactivated
 
-	for (int i = 0; i < AnalogPins; i++) {
-		pinMode(this->AnalogInputPins[i], INPUT);
+	for (int i = 0; i < AnalogInputPins; i++) {
+		pinMode(this->AnalogPins[i], INPUT);
 	}
 
 	for (int i = 0; i < Digital24VPins; i++) {
 		pinMode(this->Input24VoltPins[i], INPUT);
 	}
 
-	for (int i = 0; i < PullUpDigitalPins; i++) {
+	for (int i = 0; i < DigitalPullUpPins; i++) {
 		pinMode(this->InputPullUpPins[i], INPUT_PULLUP);
 	}
 
 	for (int i = 0; i < DigitalOutputPins; i++) {
 		pinMode(this->OutputPins[i], OUTPUT);
 		delay(1);
-		digitalWrite(this->OutputPins[i],this->OutputDefaults[DigitalOutputPins]);
+		digitalWrite(this->OutputPins[i],this->OutputDefaults[i]);
 	}
 }
 
 void MonitorController::ReadAnalog()
 {
-	for (int i = 0; i < AnalogPins; i++) {
+	for (int i = 0; i < AnalogInputPins; i++) {
 		float read = 0;
 		for (int x = 0; x < AVG; x++) {
-			float val = (float)analogRead(this->AnalogInputPins[i]);
+			float val = (float)analogRead(this->AnalogPins[i]);
 			read += val;
 		}
 		read = read / AVG;
 		this->AnalogValues[i]=(read/Step);
-		delay(5);
+		delay(1);
 	}
 }
 
 void MonitorController::ReadDigital()
 {
-	for (int i = 0; i < PullUpDigitalPins; i++) {
+	for (int i = 0; i < DigitalPullUpPins; i++) {
 		int value = digitalRead(this->InputPullUpPins[i]);
 		if (value==LOW) {
 			this->InputPullUpValues[i] = 1; //switch(Warning)
@@ -64,15 +65,15 @@ void MonitorController::ReadDigital()
 
 void MonitorController::UpdateModbus()
 {
-	for (int i = 0; i < AnalogPins; i++) {
+	for (int i = 0; i < AnalogInputPins; i++) {
 		this->modbus.R[i] = (int)(this->AnalogValues[i]*1000);
 	}
 
-	for (int i = 0; i < PullUpDigitalPins; i++) {
+	for (int i = 0; i < DigitalPullUpPins; i++) {
 		this->modbus.C[i] = this->InputPullUpValues[i];
 	}
 
-	int offset = PullUpDigitalPins;
+	int offset = DigitalPullUpPins;
 
 	for (int i = 0; i < Digital24VPins; i++) {
 		this->modbus.C[i + offset] = this->Input24VoltValues[i];
@@ -82,24 +83,10 @@ void MonitorController::UpdateModbus()
 void MonitorController::CheckModbusInput()
 {	
 	if (this->modbus.C[CoilComIndex]) {
-		if (this->modbus.C[MaintenceModeIndex]) {
-			this->maintenceMode = true;
-			//set reg
-			for (int i = 0; i < DigitalOutputPins; i++) {
-				digitalWrite(this->OutputPins[i],modbus.R[i + InputRegIndex]);
-			}
-		}else if(this->maintenceMode) {
-			this->maintenceMode = false;
-			for (int i = 0; i < DigitalOutputPins; i++) {
+		for (int i = 0; i < DigitalOutputPins; i++) {
+			if (this->OutputValues[i] != modbus.R[i + InputRegIndex]) {
+				this->OutputValues[i] = modbus.R[i + InputRegIndex];
 				digitalWrite(this->OutputPins[i], this->OutputValues[i]);
-			}
-		}else {
-			//check registers
-			for (int i = 0; i < DigitalOutputPins; i++) {
-				if (this->OutputValues[i] != modbus.R[i + InputRegIndex]) {
-					this->OutputValues[i] = modbus.R[i + InputRegIndex];
-					digitalWrite(this->OutputPins[i], this->OutputValues[i]);
-				}
 			}
 		}
 		this->modbus.C[CoilComIndex] = false;
@@ -130,7 +117,6 @@ void MonitorController::Run()
 	modbus.Run();
 	this->CheckModbusInput();
 	if (millis() >= (LoopTime + this->lastLoop)) {
-
 		this->ReadDigital();
 		this->ReadAnalog();
 		this->UpdateModbus();		
@@ -147,7 +133,7 @@ void MonitorController::Run()
 void MonitorController::Print()
 {
 	Serial.println("Digital Pull-up Pins");
-	for (int i = 0; i < PullUpDigitalPins; i++) {
+	for (int i = 0; i < DigitalPullUpPins; i++) {
 		Serial.print(" P"); Serial.print(i);
 		if (InputPullUpValues[i]) {
 			Serial.print(": High");
@@ -171,7 +157,7 @@ void MonitorController::Print()
 	Serial.println();
 
 	Serial.println("Analog Pins");
-	for (int i = 0; i < AnalogPins; i++) {
+	for (int i = 0; i < AnalogInputPins; i++) {
 		Serial.print(" P"); Serial.print(i);
 		Serial.print(": "); Serial.print(AnalogValues[i]);
 	}

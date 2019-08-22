@@ -119,7 +119,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Helpers.h" />
     <ClInclude Include="MonitorController.h" />
     <ClInclude Include="__vm\.FacilityMonitoringFirmware.vsarduino.h" />
   </ItemGroup>
