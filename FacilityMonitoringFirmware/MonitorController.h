@@ -20,15 +20,28 @@
 #define DigitalPullUpPins	22
 #define Digital24VPins		16
 #define DigitalOutputPins	10
+#define SoftwareOuputPins	7
+#define HardwareOutputPins	3
 
-#define CoilComIndex		38 //DigitalPullUpPins+Digital24VPins
-#define MaintenceModeIndex	39 //CoilComIndex+1
+#define SystemOkayIndex		7
+#define SystemWarningIndex	8
+#define SystemAlarmIndex	9
+
+#define KeySwitchIndex		21
+
+#define HardwareMaintIndex	38
+#define CoilComIndex		39
+#define SoftMaintModeIndex	40
+#define WarningIndex		41
+#define AlarmIndex			42
 #define InputRegIndex		16 //AnalogInputPins
 
 //Timing
 #define LoopTime			50
 #define PrintTime			5000 
 #define ResetTime			604800000
+
+typedef enum ControllerState {OKAY,WARNING,ALARM,MAINTENCE};
 
 class MonitorController
 {
@@ -38,7 +51,15 @@ public:
 	void ReadAnalog();
 	void ReadDigital();
 	void UpdateModbus();
-	void CheckModbusInput();
+	void CheckCom();
+	void CheckState();
+	void SetLights();
+
+	void DisplaySystemOkay();
+	void DisplaySystemWarning();
+	void DisplaySystemAlarm();
+	void DisplayMaintenance();
+
 	void Print();
 	void Init();
 	void Run();
@@ -52,12 +73,19 @@ private:
 	//const float OffsetValues[AnalogPins] = { 0.00998,0.00920,.008976,0.00919,0.00744,0.00791,-.00462,0.0000,0.00787,0.00763,0.00761,0.00761,0.00761,0.00833,0.00782,0.0000 };
 	//const float RValues[AnalogPins] = { 250.81,250.474,246.2776,210.223,250.58,240.204,332.018,0.000,250.902,250.918,250.684,250.808,251.002,250.576,250.821,0.000 };
 	
-	bool maintenceMode = false;
+	bool hardwareMaintMode = false;
+	bool softwareMaintMode = false;
+	bool warning = false;
+	bool alarm = false;
+
+	ControllerState State;
+
 	long lastPrint, lastLoop;
 	float AnalogValues[AnalogInputPins] = { 0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f };
 	float AnalogCurrentValues[AnalogInputPins] = { 0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f,0.000f};
-	int OutputDefaults[DigitalOutputPins] = { LOW,LOW,LOW,LOW,LOW,LOW,LOW,HIGH,HIGH,HIGH};
+	int OutputDefaults[DigitalOutputPins] = { LOW,LOW,LOW,LOW,LOW,LOW,HIGH,LOW,HIGH,HIGH};
 	int OutputValues[DigitalOutputPins] = { 0 };
+	int ModbusOutputValues[DigitalOutputPins] = { 0 };
 	bool InputPullUpValues[DigitalPullUpPins] = { 0 };
 	bool Input24VoltValues[Digital24VPins] = { 0 };
 
