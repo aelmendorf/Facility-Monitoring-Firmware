@@ -22,6 +22,7 @@ void MonitorController::SetupPins() {
 	}
 
 	for (int i = 0; i < DigitalOutputPins; i++) {
+		this->ModbusOutputValues[i] = this->OutputDefaults[i];
 		pinMode(this->OutputPins[i], OUTPUT);
 		delay(1);
 		digitalWrite(this->OutputPins[i], this->OutputDefaults[i]);
@@ -45,9 +46,9 @@ void MonitorController::ReadDigital() {
 	for (int i = 0; i < DigitalPullUpPins; i++) {
 		int value = digitalRead(this->InputPullUpPins[i]);
 		if (value == LOW) {
-			this->InputPullUpValues[i] = 1; //switch(Warning)
+			this->InputPullUpValues[i] = true; //switch(Warning)
 		} else {
-			this->InputPullUpValues[i] = 0; // no Switch
+			this->InputPullUpValues[i] = false; // no Switch
 		}
 	}
 
@@ -78,6 +79,15 @@ void MonitorController::UpdateModbus() {
 	for (int i = 0; i < Digital24VPins; i++) {
 		this->modbus.C[i + offset] = this->Input24VoltValues[i];
 	}
+
+	if (!modbus.C[CoilComIndex]) {
+		offset = AnalogInputPins;
+		for (int i = 0; i < DigitalOutputPins; i++) {
+			this->modbus.R[i + offset] = this->ModbusOutputValues[i];
+		}
+	}
+	offset = DigitalOutputPins + AnalogInputPins;
+	this->modbus.R[offset] = this->State;
 }
 
 void MonitorController::CheckCom() {
@@ -99,16 +109,15 @@ void MonitorController::CheckState() {
 		if (this->hardwareMaintMode && this->softwareMaintMode) {
 			this->softwareMaintMode = false;
 			this->modbus.C[HardwareMaintIndex] = true;
-			this->modbus.C[SoftMaintModeIndex] = false;
-			
+			this->modbus.C[SoftMaintModeIndex] = false;			
 		} else if (this->hardwareMaintMode && !this->softwareMaintMode) {
 			this->modbus.C[HardwareMaintIndex] = true;
-
 		} else if (!this->hardwareMaintMode && this->softwareMaintMode) {
 			this->modbus.C[HardwareMaintIndex] = false;
-		}	
+		}
 		this->State = MAINTENCE;
 	} else {
+		this->modbus.C[HardwareMaintIndex] = false;
 		if (this->alarm || this->warning) {
 			if (this->alarm) {
 				this->State = ALARM;
@@ -186,24 +195,36 @@ void MonitorController::Run() {
 }
 
 void MonitorController::DisplaySystemOkay() {
+	this->ModbusOutputValues[SystemOkayIndex] = LOW;
+	this->ModbusOutputValues[SystemWarningIndex] = HIGH;
+	this->ModbusOutputValues[SystemAlarmIndex] = HIGH;
 	digitalWrite(this->OutputPins[SystemOkayIndex], LOW);
 	digitalWrite(this->OutputPins[SystemWarningIndex], HIGH);
 	digitalWrite(this->OutputPins[SystemAlarmIndex], HIGH);
 }
 
 void MonitorController::DisplaySystemWarning() {
+	this->ModbusOutputValues[SystemOkayIndex] = HIGH;
+	this->ModbusOutputValues[SystemWarningIndex] = LOW;
+	this->ModbusOutputValues[SystemAlarmIndex] = HIGH;
 	digitalWrite(this->OutputPins[SystemOkayIndex], HIGH);
 	digitalWrite(this->OutputPins[SystemWarningIndex], LOW);
 	digitalWrite(this->OutputPins[SystemAlarmIndex], HIGH);
 }
 
 void MonitorController::DisplaySystemAlarm() {
+	this->ModbusOutputValues[SystemOkayIndex] = HIGH;
+	this->ModbusOutputValues[SystemWarningIndex] = HIGH;
+	this->ModbusOutputValues[SystemAlarmIndex] = LOW;
 	digitalWrite(this->OutputPins[SystemOkayIndex], HIGH);
 	digitalWrite(this->OutputPins[SystemWarningIndex], HIGH);
 	digitalWrite(this->OutputPins[SystemAlarmIndex], LOW);
 }
 
 void MonitorController::DisplayMaintenance() {
+	this->ModbusOutputValues[SystemOkayIndex] = LOW;
+	this->ModbusOutputValues[SystemWarningIndex] = LOW;
+	this->ModbusOutputValues[SystemAlarmIndex] = HIGH;
 	digitalWrite(this->OutputPins[SystemOkayIndex], LOW);
 	digitalWrite(this->OutputPins[SystemWarningIndex], LOW);
 	digitalWrite(this->OutputPins[SystemAlarmIndex], HIGH);
