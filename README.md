@@ -13,3 +13,10 @@ Available Channels: These were chosen based on industry standard gas sensor and 
 Task:
 * Read digital and analog inputs then update modbus register.  
 * Recieve commands from server then update outputs accordingly
+
+Monitoring Box images below:
+
+![Alt Text](https://drive.google.com/uc?export=view&id=1x6pShu-5J5-v-ukDgh3S6b1UDACBadIJ)
+
+![Alt Text](https://drive.google.com/uc?export=view&id=1wnOXVPVdWtS8vbOuF2WbyvdsSSsC0S7G)
+
