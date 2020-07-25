@@ -2,7 +2,7 @@
 Generic Facility Monitor Box Firmware with Modbus TCP Protocol
 
 Designed around being scalable and ease of use.  Basic idea is facility technicians can add,remove,change sensors by simply plugging them in 
-then modifying through facility monitoring website(seperate repo).
+then modifying through facility monitoring website(seperate repo https://github.com/aelmendorf/Facility-Monitoring).
 
 Available Channels: These were chosen based on industry standard gas sensor and switch specifications
 * 10 5v,3amp outputs
